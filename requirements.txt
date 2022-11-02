@@ -1,0 +1,5 @@
+emlx~=1.0.4
+loguru~=0.6.0
+requests~=2.28.1
+pyquery~=1.4.3
+Jinja2~=3.1.2

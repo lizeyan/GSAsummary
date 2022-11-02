@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<head>
+    <title>Google Scholar Alerts Summary from {{ start_datetime }} to {{ end_datetime }}></title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+          integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <ul id="navigation" class="list-group">
+        {% for paper in papers %}
+            <li class="list-group-item">
+                <em class="h4">
+                    <a href="{{ paper.url }}" target="_blank"><span> {{ paper.title }} </span></a>
+                </em>
+                {% if paper.type != "" %}
+                    <span class="label label-info" style="display: inline-block;">{{ paper.type }}</span>
+                {% endif %}
+                {% if paper.venue_year != "" %}
+                    <span class="label label-success" style="display: inline-block;">{{ paper.venue_year }}</span>
+                {% endif %}
+                <br>
+                <span>
+                {% set authors = paper.authors.split(', ') %}
+                    {% for author in authors %}
+                        <span class="label label-default" style="display: inline-block;"> {{ author }} </span>
+                    {% endfor %}
+            </span>
+                <br>
+                <span>{{ paper.abstract }}</span>
+                <br>
+                {% if paper.doi != "" %}
+                    <span><a target="_blank" href="https://doi.org/{{ paper.doi }}">{{ paper.doi }}</a></span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+</body>
+</html>

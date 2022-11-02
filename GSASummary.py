@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from email.message import EmailMessage
 from functools import lru_cache, reduce
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 from urllib.parse import urlparse, parse_qs
 
 import emlx
@@ -16,6 +16,7 @@ from emlx.emlx import Emlx
 from jinja2 import Environment, FileSystemLoader
 from loguru import logger
 from pyquery import PyQuery
+from scholarly import scholarly, ProxyGenerator
 
 data_root = Path("~/Library/Mail").expanduser()
 latest_scholar_emails = []
@@ -65,47 +66,90 @@ PAPER_ITEM = namedtuple(
 
 
 @lru_cache(maxsize=None)
-def get_paper_detail_from_dblp(*, title: str, abstract: str, author_venue: str, url: str) -> PAPER_ITEM:
+def dblp_search(title: str) -> Optional[dict]:
     try:
-        scholar_author = author_venue.split(" - ")[0]
-        scholar_venue_year = author_venue.split(" - ")[1]
+        rsp = requests.get("https://dblp.org/search/publ/api", params={"q": title, "format": "json"}).json()
+        if rsp["result"]["hits"]["@total"] != '0':
+            return rsp["result"]["hits"]["hit"][0]["info"]
+        else:
+            return None
     except Exception as e:
-        logger.error(f"parse {author_venue=} failed: {e}")
-        scholar_author = author_venue
+        logger.error(f"Search from DBLP with {title} failed: {e}")
+        return None
+
+
+@lru_cache(maxsize=None)
+def google_scholar_search(title: str) -> Optional[dict]:
+    try:
+        rsp = list(scholarly.search_pubs(title))
+        if len(rsp) > 0:
+            return rsp[0]
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"Search from Google Scholar with {title} failed: {e}")
+        return None
+
+
+@lru_cache(maxsize=None)
+def get_paper_detail_from_dblp(
+        *, title: str, scholar_abstract: str, scholar_author_venue: str, url: str
+) -> PAPER_ITEM:
+    try:
+        scholar_author = scholar_author_venue.split(" - ")[0]
+        scholar_venue_year = scholar_author_venue.split(" - ")[1]
+    except Exception as e:
+        logger.error(f"parse {scholar_author_venue=} failed: {e}")
+        scholar_author = scholar_author_venue
         scholar_venue_year = ""
     scholar_url = url
     try:
-        rsp = requests.get("https://dblp.org/search/publ/api", params={"q": title, "format": "json"}).json()
-        if rsp["result"]["hits"]["@total"] != '0':  # if we can find a item in DBLP
-            info = rsp["result"]["hits"]["hit"][0]["info"]
-            if "venue" in info and "year" in info:
-                venue_year = f'{info["venue"]}, {info["year"]}'
+        d_hit = dblp_search(title=title)
+        g_hit = google_scholar_search(title=title)
+        if d_hit is not None or g_hit is not None:
+            if d_hit is not None and "venue" in d_hit and "year" in d_hit:
+                venue_year = f'{d_hit["venue"]}, {d_hit["year"]}'
+            elif g_hit is not None and "bib" in g_hit and "venue" in g_hit['bib'] and "pub_year" in g_hit['bib']:
+                venue_year = f'{g_hit["bib"]["venue"]}, {g_hit["bib"]["year"]}'
             else:
                 venue_year = scholar_venue_year
-            if "authors" in info:
-                authors = ", ".join([_["text"] for _ in info["authors"]["author"]])
+            if d_hit is not None and "authors" in d_hit:
+                authors = ", ".join([_["text"] for _ in d_hit["authors"]["author"]])
+            elif g_hit is not None and "bib" in g_hit and "author" in g_hit['bib']:
+                authors = ", ".join(g_hit["bib"]["author"])
             else:
                 authors = scholar_author
-            if "doi" in info:
-                url = f'https://doi.org/{info["doi"]}'
+
+            if d_hit is not None and "doi" in d_hit:
+                url = f'https://doi.org/{d_hit["doi"]}'
+                doi = d_hit["doi"]
             else:
                 url = scholar_url
+                doi = ""
+
+            if d_hit is not None and "type" in d_hit:
+                pub_type = d_hit["type"]
+            else:
+                pub_type = ""
+
+            if g_hit is not None and "bib" in g_hit and "abstract" in g_hit["bib"]:
+                abstract = g_hit["bib"]["abstract"]
+            else:
+                abstract = scholar_abstract
             return PAPER_ITEM(
                 title=title,
                 abstract=abstract,
                 venue_year=venue_year,
                 authors=authors,
-                doi=info.get("doi", ""),
-                type=info.get("type", ""),
+                doi=doi,
+                type=pub_type,
                 url=url
             )
-        else:
-            pass
     except Exception as e:
         logger.error(f"Encounter exception when querying {title=}: {e}")
     return PAPER_ITEM(
         title=title,
-        abstract=abstract,
+        abstract=scholar_abstract,
         venue_year=scholar_venue_year,
         doi="",
         type="",
@@ -139,7 +183,7 @@ def parse_email_from_path(email_path: Path) -> Dict[str, PAPER_ITEM]:
         ret = {}
         for title, abstract, author_venue, url in zip(titles, abstracts, author_venues, urls):
             ret[title] = get_paper_detail_from_dblp(
-                title=title, abstract=abstract, author_venue=author_venue, url=url
+                title=title, scholar_abstract=abstract, scholar_author_venue=author_venue, url=url
             )
         return ret
     except Exception as e:
@@ -185,10 +229,15 @@ def main():
             parse_email_from_path,
             filter(is_path_latest, data_root.glob("**/*.emlx"))
         ))
+    if len(papers) == 0:
+        return
     papers = reduce(lambda a, b: a | b, papers)
     papers = {k: v._asdict() for k, v in papers.items()}
     with open(f"output/{END_DATE_STR}.json", "w+") as f:
         json.dump(papers, f, indent=4, ensure_ascii=False)
+
+    if len(papers) == 0:
+        return
 
     render_report()
     send_email()
@@ -200,4 +249,7 @@ if __name__ == '__main__':
         enqueue=True, encoding="utf-8",
         compression="zip", level="INFO",
     )
+    pg = ProxyGenerator()
+    success = pg.FreeProxies()
+    scholarly.use_proxy(pg)
     main()

@@ -262,7 +262,10 @@ if __name__ == '__main__':
     END_DATE_STR = datetime.now().strftime('%Y-%m-%d')
     DATETIME_THRESHOLD = datetime.now() - timedelta(days=int(sys.argv[1]) if len(sys.argv) > 1 else 1)
     logger.info(f"START {DATETIME_THRESHOLD} - {END_DATE_STR}")
-    pg = ProxyGenerator()
-    success = pg.FreeProxies()
-    scholarly.use_proxy(pg)
+    try:
+        pg = ProxyGenerator()
+        success = pg.FreeProxies()
+        scholarly.use_proxy(pg)
+    except Exception as e:
+        logger.error(f"Use proxy error: {e}")
     main()

@@ -1,7 +1,11 @@
 # GSASummary
 If I follow many researcher on Google Scholar (especially subscribing citation or related papers), I will get dozens of emails every week, but many of the items are repeated. And the massive volume of emails makes my inbox particularly crowded and cluttered, making it difficult to find emails.
 
-This script generates a HTML report for Google Scholar Alerts by reading your emails from your Mail.app (only for macOS). I have only to read this report and can automatically move the orignal alert emails out of inbox via mailbox rules to keep my inbox clean.
+This script generates a HTML report for Google Scholar Alerts by reading your emails from your Mail.app (only for macOS) and send it to you by email. I have only to read this report and can automatically move the orignal alert emails out of inbox via mailbox rules to keep my inbox clean.
+
+## Example
+<img width="1402" alt="image" src="https://user-images.githubusercontent.com/12494243/201290154-82426592-5a31-4477-8e27-9c28b446ac58.png">
+
 
 ## Usage
 1. You should change the email address in the script, and also optionally change the email sending method in `send_email()` (by default I use remote iCloud mail server and the password is saved in a file called 'MAIL_PASSWORD' in this directory).

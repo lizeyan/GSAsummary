@@ -9,34 +9,45 @@
 </head>
 <body>
 <div class="container">
-    <ul id="navigation" class="list-group">
+    <div id="navigation" class="">
         {% for paper in papers %}
-            <li class="list-group-item">
-                <em class="h4">
-                    <a href="{{ paper.url }}" target="_blank"><span> {{ paper.title }} </span></a>
-                </em>
-                {% if paper.type != "" %}
-                    <span class="label label-info" style="display: inline-block;">{{ paper.type }}</span>
-                {% endif %}
-                {% if paper.venue_year != "" %}
-                    <span class="label label-success" style="display: inline-block;">{{ paper.venue_year }}</span>
-                {% endif %}
-                <br>
-                <span>
+            <div class="">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <em class="h4">
+                            <a href="{{ paper.url }}" target="_blank"><span> {{ paper.title }} </span></a>
+                        </em>
+                        {% if paper.type != "" %}
+                            <span class="label label-info" style="display: inline-block;">{{ paper.type }}</span>
+                        {% endif %}
+                        {% if paper.venue_year != "" %}
+                            <span class="label label-success"
+                                  style="display: inline-block;">{{ paper.venue_year }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="panel-body">
+                    <span>
                 {% set authors = paper.authors.split(', ') %}
-                    {% for author in authors %}
-                        <span class="label label-default" style="display: inline-block;"> {{ author }} </span>
-                    {% endfor %}
+                        {% for author in authors %}
+                            <span class="label label-default" style="display: inline-block;"> {{ author }} </span>
+                        {% endfor %}
             </span>
-                <br>
-                <span>{{ paper.abstract }}</span>
-                <br>
-                {% if paper.doi != "" %}
-                    <span><a target="_blank" href="https://doi.org/{{ paper.doi }}">{{ paper.doi }}</a></span>
-                {% endif %}
-            </li>
+                        <br>
+                        <span>{{ paper.abstract }}</span>
+                        {% if paper.doi != "" %}
+                            <br>
+                            <span><a target="_blank" href="https://doi.org/{{ paper.doi }}">{{ paper.doi }}</a></span>
+                        {% endif %}
+                    </div>
+                    <div class="panel-footer">
+                    {% for reason in paper.reason %}
+                        <span style="display: inline-block"><i>{{ reason }}</i></span>
+                    {% endfor %}
+                    </div>
+                </div>
+            </div>
         {% endfor %}
-    </ul>
+    </div>
 </div>
 
 </body>

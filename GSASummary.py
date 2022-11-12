@@ -1,7 +1,7 @@
-import sys
 import json
 import quopri
 import smtplib
+import sys
 from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -25,6 +25,8 @@ latest_scholar_emails = []
 # ================= Change These ===============
 TARGET_EMAIL = "li_zeyan@icloud.com"
 ME = "Zeyan Li <li_zeyan@icloud.com>"
+
+
 # ==============================================
 
 
@@ -57,7 +59,7 @@ PAPER_ITEM = namedtuple(
     "PAPER_ITEM",
     [
         "title", "abstract", "venue_year", "authors",
-        "doi", "type", "url",
+        "doi", "type", "url", 'reason',
     ]
 )
 
@@ -92,7 +94,7 @@ def google_scholar_search(title: str) -> Optional[dict]:
 
 @lru_cache(maxsize=None)
 def get_paper_detail_from_dblp(
-        *, title: str, scholar_abstract: str, scholar_author_venue: str, url: str
+        *, title: str, scholar_abstract: str, scholar_author_venue: str, url: str, reason: str,
 ) -> PAPER_ITEM:
     try:
         scholar_author = scholar_author_venue.split(" - ")[0]
@@ -142,7 +144,8 @@ def get_paper_detail_from_dblp(
                 authors=authors,
                 doi=doi,
                 type=pub_type,
-                url=url
+                url=url,
+                reason=reason,
             )
     except Exception as e:
         logger.error(f"Encounter exception when querying {title=}: {e}")
@@ -153,7 +156,8 @@ def get_paper_detail_from_dblp(
         doi="",
         type="",
         authors=scholar_author,
-        url=scholar_url
+        url=scholar_url,
+        reason=reason,
     )
 
 
@@ -181,16 +185,18 @@ def parse_email_from_path(email_path: Path) -> Dict[str, PAPER_ITEM]:
         ]
         ret = {}
         __paper_titles = "\n\t\t\t\t".join(titles)
+        reason = pq('p')[-1].text_content().encode('latin1').decode('utf-8')
         logger.info(
             f"Parsed Email Detail: \n"
             f"\tSubject:\t{email.headers.get('Subject', 'NaN')}\n"
             f"\tDate:\t\t{email.headers.get('Date', 'NaN')}\n"
-            f"\tReason:\t\t{pq('p')[-1].text_content().encode('latin1').decode('utf-8')}\n"
+            f"\tReason:\t\t{reason}\n"
             f"\tPapers:\t\t{__paper_titles}\n"
         )
         for title, abstract, author_venue, url in zip(titles, abstracts, author_venues, urls):
             ret[title] = get_paper_detail_from_dblp(
-                title=title, scholar_abstract=abstract, scholar_author_venue=author_venue, url=url
+                title=title, scholar_abstract=abstract, scholar_author_venue=author_venue, url=url,
+                reason=reason,
             )
         return ret
     except Exception as e:
@@ -230,26 +236,45 @@ def send_email():
         server.send_message(msg)
 
 
-def main():
+def parse_papers_from_emails():
     with ThreadPoolExecutor() as executor:
-        papers = list(executor.map(
+        paper_dicts_of_emails = list(executor.map(
             parse_email_from_path,
             filter(is_path_latest, data_root.glob("**/*.emlx"))
         ))
-    if len(papers) == 0:
+    if len(paper_dicts_of_emails) == 0:
         logger.info("No recent alert found.")
         return
-    papers = reduce(lambda a, b: a | b, papers)
-    papers = {k: v._asdict() for k, v in papers.items()}
+    papers = {}
+    for paper_dict in paper_dicts_of_emails:
+        for title, paper in paper_dict.items():
+            if title not in papers:
+                reason = [paper.reason]
+            else:
+                reason = papers[title]["reason"] + [paper.reason]
+            papers[title] = paper._asdict()
+            papers[title]["reason"] = reason
     with open(f"output/{END_DATE_STR}.json", "w+") as f:
         json.dump(papers, f, indent=4, ensure_ascii=False)
+    return len(papers)
 
-    if len(papers) == 0:
+
+def main():
+    if parse_papers_from_emails() == 0:
         logger.info("No recent paper found.")
         return
 
     render_report()
     send_email()
+
+
+def set_proxy():
+    try:
+        pg = ProxyGenerator()
+        pg.FreeProxies()
+        scholarly.use_proxy(pg)
+    except Exception as e:
+        logger.error(f"Use proxy error: {e}")
 
 
 if __name__ == '__main__':
@@ -258,14 +283,9 @@ if __name__ == '__main__':
         enqueue=True, encoding="utf-8",
         compression="zip", level="INFO",
     )
-    
+
     END_DATE_STR = datetime.now().strftime('%Y-%m-%d')
     DATETIME_THRESHOLD = datetime.now() - timedelta(days=int(sys.argv[1]) if len(sys.argv) > 1 else 1)
     logger.info(f"START {DATETIME_THRESHOLD} - {END_DATE_STR}")
-    try:
-        pg = ProxyGenerator()
-        success = pg.FreeProxies()
-        scholarly.use_proxy(pg)
-    except Exception as e:
-        logger.error(f"Use proxy error: {e}")
+    set_proxy()
     main()

@@ -17,7 +17,7 @@ from emlx.emlx import Emlx
 from jinja2 import Environment, FileSystemLoader
 from loguru import logger
 from pyquery import PyQuery
-from scholarly import scholarly, ProxyGenerator
+# from scholarly import scholarly
 
 data_root = Path("~/Library/Mail").expanduser()
 latest_scholar_emails = []
@@ -80,16 +80,17 @@ def dblp_search(title: str) -> Optional[dict]:
 
 @lru_cache(maxsize=None)
 def google_scholar_search(title: str) -> Optional[dict]:
-    logger.debug(f"Search {title=} in Google Scholar")
-    try:
-        rsp = list(scholarly.search_pubs(title))
-        if len(rsp) > 0:
-            return rsp[0]
-        else:
-            return None
-    except Exception as e:
-        logger.error(f"Search from Google Scholar with {title} failed: {e}")
-        return None
+    return None # not implemented
+    # logger.debug(f"Search {title=} in Google Scholar")
+    # try:
+    #     rsp = list(scholarly.search_pubs(title))
+    #     if len(rsp) > 0:
+    #         return rsp[0]
+    #     else:
+    #         return None
+    # except Exception as e:
+    #     logger.error(f"Search from Google Scholar with {title} failed: {e}")
+    #     return None
 
 
 @lru_cache(maxsize=None)
@@ -287,5 +288,5 @@ if __name__ == '__main__':
     END_DATE_STR = datetime.now().strftime('%Y-%m-%d')
     DATETIME_THRESHOLD = datetime.now() - timedelta(days=int(sys.argv[1]) if len(sys.argv) > 1 else 1)
     logger.info(f"START {DATETIME_THRESHOLD} - {END_DATE_STR}")
-    set_proxy()
+    # set_proxy()
     main()

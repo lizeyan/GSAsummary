@@ -279,14 +279,17 @@ def set_proxy():
 
 
 if __name__ == '__main__':
-    logger.add(
-        "/usr/local/var/log/GSASummary.log", rotation="1 week", retention="1 month",
-        enqueue=True, encoding="utf-8",
-        compression="zip", level="INFO",
-    )
+    try:
+        logger.add(
+            "/usr/local/var/log/GSASummary.log", rotation="1 week", retention="1 month",
+            enqueue=True, encoding="utf-8",
+            compression="zip", level="INFO",
+        )
 
-    END_DATE_STR = datetime.now().strftime('%Y-%m-%d')
-    DATETIME_THRESHOLD = datetime.now() - timedelta(days=int(sys.argv[1]) if len(sys.argv) > 1 else 1)
-    logger.info(f"START {DATETIME_THRESHOLD} - {END_DATE_STR}")
-    # set_proxy()
-    main()
+        END_DATE_STR = datetime.now().strftime('%Y-%m-%d')
+        DATETIME_THRESHOLD = datetime.now() - timedelta(days=int(sys.argv[1]) if len(sys.argv) > 1 else 1)
+        logger.info(f"START {DATETIME_THRESHOLD} - {END_DATE_STR}")
+        # set_proxy()
+        main()
+    except Exception as e:
+        logger.exception("GSASummary failed", exception=e)

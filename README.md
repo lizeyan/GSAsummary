@@ -4,7 +4,7 @@ If I follow many researcher on Google Scholar (especially subscribing citation o
 This script generates a HTML report for Google Scholar Alerts by reading your emails from your Mail.app (only for macOS) and send it to you by email. I have only to read this report and can automatically move the orignal alert emails out of inbox via mailbox rules to keep my inbox clean.
 
 ## Example
-<img width="1169" alt="image" src="https://user-images.githubusercontent.com/12494243/229031754-df9f304d-f005-4ae2-aa30-fc2fbd198bb4.png">
+<img width="1192" alt="image" src="https://user-images.githubusercontent.com/12494243/229031855-2d12acea-9bc5-4531-a5b9-158187786fde.png">
 
 
 

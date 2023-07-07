@@ -233,7 +233,7 @@ def send_email():
         # re-identify ourselves as an encrypted connection
         server.ehlo()
         with open("MAIL_PASSWORD", 'r') as f:
-            server.login('li_zeyan@icloud.com', f.read())
+            server.login('li_zeyan@icloud.com', f.read().rstrip())
         server.send_message(msg)
 
 
@@ -281,7 +281,7 @@ def set_proxy():
 if __name__ == '__main__':
     try:
         logger.add(
-            "/usr/local/var/log/GSASummary.log", rotation="1 week", retention="1 month",
+            "~/var/log/GSASummary.log", rotation="1 week", retention="1 month",
             enqueue=True, encoding="utf-8",
             compression="zip", level="INFO",
         )

@@ -2,6 +2,7 @@ import json
 import quopri
 import smtplib
 import sys
+import os
 from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -19,13 +20,24 @@ from loguru import logger
 from pyquery import PyQuery
 # from scholarly import scholarly
 
-data_root = Path("~/Library/Mail").expanduser()
+from dotenv import dotenv_values
+
+# ================= Configuration ===============
+config = {
+    **dotenv_values(".env.shared"),  # load shared development variables
+    **dotenv_values(".env.secret"),  # load secret variables
+    **os.environ,  # override loaded values with environment variables
+}
+
+TARGET_EMAIL = config['GSAS_MAIL_SUMMARY_TARGET_MAIL']
+ME = config['GSAS_MAIL_SUMMARY_FROM']
+MAIL_PASSWORD = config['GSAS_MAIL_PASSWORD'].rstrip()
+MAIL_USER = config['GSAS_MAIL_USER']
+LOG_PATH = config['GSAS_LOG_PATH']
+
+
+data_root = Path(config['GSAS_PATH']).expanduser()
 latest_scholar_emails = []
-
-# ================= Change These ===============
-TARGET_EMAIL = "li_zeyan@icloud.com"
-ME = "Zeyan Li <li_zeyan@icloud.com>"
-
 
 # ==============================================
 
@@ -232,8 +244,7 @@ def send_email():
         server.starttls()
         # re-identify ourselves as an encrypted connection
         server.ehlo()
-        with open("MAIL_PASSWORD", 'r') as f:
-            server.login('li_zeyan@icloud.com', f.read().rstrip())
+        server.login(MAIL_USER, MAIL_PASSWORD)
         server.send_message(msg)
 
 
@@ -281,7 +292,7 @@ def set_proxy():
 if __name__ == '__main__':
     try:
         logger.add(
-            "~/var/log/GSASummary.log", rotation="1 week", retention="1 month",
+            os.path.expanduser(LOG_PATH), rotation="1 week", retention="1 month",
             enqueue=True, encoding="utf-8",
             compression="zip", level="INFO",
         )

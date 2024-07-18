@@ -10,42 +10,50 @@
 <body>
 <div class="container">
     <div id="navigation" class="">
-        {% for paper in papers %}
-            <div class="">
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <em class="h4">
-                            <a href="{{ paper.url }}" target="_blank"><span> {{ paper.title }} </span></a>
-                        </em>
-                        {% if paper.type != "" %}
-                            <span class="label label-info" style="display: inline-block;">{{ paper.type }}</span>
-                        {% endif %}
-                        {% if paper.venue_year != "" %}
-                            <span class="label label-success"
-                                  style="display: inline-block;">{{ paper.venue_year }}</span>
-                        {% endif %}
+
+        {% for group in groups %}
+            <section id="{{ group.title }}">
+                <h2>
+                    {{ group.title }}
+                </h2>
+                {% for paper in group.papers %}
+                    <div class="">
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <em class="h4">
+                                    <a href="{{ paper.url }}" target="_blank"><span> {{ paper.title }} </span></a>
+                                </em>
+                                {% if paper.type != "" %}
+                                    <span class="label label-info" style="display: inline-block;">{{ paper.type }}</span>
+                                {% endif %}
+                                {% if paper.venue_year != "" %}
+                                    <span class="label label-success"
+                                          style="display: inline-block;">{{ paper.venue_year }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="panel-body">
+                            <span>
+                        {% set authors = paper.authors.split(', ') %}
+                                {% for author in authors %}
+                                    <span class="label label-default" style="display: inline-block;"> {{ author }} </span>
+                                {% endfor %}
+                    </span>
+                                <br>
+                                <span>{{ paper.abstract }}</span>
+                                {% if paper.doi != "" %}
+                                    <br>
+                                    <span><a target="_blank" href="https://doi.org/{{ paper.doi }}">{{ paper.doi }}</a></span>
+                                {% endif %}
+                            </div>
+                            <div class="panel-footer">
+                            {% for reason in paper.reason %}
+                                <span style="display: inline-block"><i>{{ reason }}</i></span>
+                            {% endfor %}
+                            </div>
+                        </div>
                     </div>
-                    <div class="panel-body">
-                    <span>
-                {% set authors = paper.authors.split(', ') %}
-                        {% for author in authors %}
-                            <span class="label label-default" style="display: inline-block;"> {{ author }} </span>
-                        {% endfor %}
-            </span>
-                        <br>
-                        <span>{{ paper.abstract }}</span>
-                        {% if paper.doi != "" %}
-                            <br>
-                            <span><a target="_blank" href="https://doi.org/{{ paper.doi }}">{{ paper.doi }}</a></span>
-                        {% endif %}
-                    </div>
-                    <div class="panel-footer">
-                    {% for reason in paper.reason %}
-                        <span style="display: inline-block"><i>{{ reason }}</i></span>
-                    {% endfor %}
-                    </div>
-                </div>
-            </div>
+                {% endfor %}
+            </section>
         {% endfor %}
     </div>
 </div>
